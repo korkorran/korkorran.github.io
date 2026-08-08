@@ -26,6 +26,14 @@ dune exec bin/main.exe -- watch     # rebuild and serve on http://localhost:8000
 dune exec bin/main.exe -- clean     # drop _site/ and the build cache
 ```
 
+`watch` needs **miou >= 0.6** (0.8.0 is known good). With miou 0.5.x the server binds
+and listens but never accepts a connection: requests hang with the process asleep at 0%
+CPU. If you hit that, `opam update && opam install miou.0.8.0`. `build` is unaffected.
+
+The generated site uses absolute paths (`/css/style.css`), which is correct for a user
+site served at the domain root — so opening `_site/index.html` over `file://` shows an
+unstyled page with broken links. Use `watch`, or any static server rooted at `_site/`.
+
 The build is incremental: YOCaml tracks every target's dependencies — sources, templates,
 and the generator binary itself — and only rewrites what changed.
 
