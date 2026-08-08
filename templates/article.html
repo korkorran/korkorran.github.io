@@ -1,0 +1,11 @@
+<article>
+  <h1>{{ title }}</h1>
+  <p class="post-meta">
+    <time datetime="{{ date.repr.date }}">{{ date.repr.date }}</time>
+{% if has_tags %}    <span class="tags">
+{% for tag in tags %}      <span class="tag">{{ tag }}</span>
+{% endfor %}    </span>
+{% endif %}  </p>
+
+{{ yocaml_body | safe }}
+</article>

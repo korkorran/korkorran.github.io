@@ -34,3 +34,10 @@ setup.log
 
 # Local OPAM switch
 _opam/
+
+# YOCaml build output and cache (_cache is a file, not a directory)
+_site/
+_cache
+
+# macOS
+.DS_Store

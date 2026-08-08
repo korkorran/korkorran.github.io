@@ -1,0 +1,18 @@
+<article>
+{% if has_page_title %}  <h1>{{ page_title }}</h1>
+{% endif %}
+{{ yocaml_body | safe }}
+
+{% if has_articles %}  <ul class="post-list">
+{% for article in articles %}    <li>
+      <h2><a href="{{ article.url }}">{{ article.title }}</a></h2>
+      <p class="post-meta">
+        <time datetime="{{ article.date.repr.date }}">{{ article.date.repr.date }}</time>
+{% if article.has_tags %}        <span class="tags">
+{% for tag in article.tags %}          <span class="tag">{{ tag }}</span>
+{% endfor %}        </span>
+{% endif %}      </p>
+{% if article.has_synopsis %}      <p>{{ article.synopsis }}</p>
+{% endif %}    </li>
+{% endfor %}  </ul>
+{% endif %}</article>

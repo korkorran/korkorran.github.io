@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="{% if has_page_charset %}{{ page_charset }}{% else %}utf-8{% endif %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if has_page_title %}{{ page_title }} · korkorran{% else %}korkorran{% endif %}</title>
+{% for entry in meta %}    <meta name="{{ entry.name }}" content="{{ entry.content }}">
+{% endfor %}    <link rel="stylesheet" href="/css/style.css">
+    <link rel="alternate" type="application/atom+xml" title="korkorran — Atom" href="/atom.xml">
+    <link rel="alternate" type="application/rss+xml" title="korkorran — RSS" href="/rss.xml">
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="site-header">
+        <p class="site-title"><a href="/">korkorran</a></p>
+        <nav class="site-nav">
+          <a href="/">Posts</a>
+          <a href="/about.html">About</a>
+          <a href="/atom.xml">Feed</a>
+        </nav>
+      </header>
+
+      <main>
+{{ yocaml_body | safe }}
+      </main>
+
+      <footer class="site-footer">
+        <span>© 2026 Frédéric Lang</span>
+        <span class="spacer">
+          <a href="https://github.com/korkorran/korkorran.github.io">Source</a>
+        </span>
+      </footer>
+    </div>
+  </body>
+</html>
