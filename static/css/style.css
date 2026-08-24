@@ -85,6 +85,21 @@ body {
   text-decoration: none;
 }
 
+/* The triskele is a single black path, so it has to be inverted in dark mode
+   or it disappears against the background. */
+.site-logo {
+  height: 1.6em;
+  width: auto;
+  margin-right: 0.45em;
+  vertical-align: -0.35em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .site-logo {
+    filter: invert(1);
+  }
+}
+
 .site-nav {
   margin-left: auto;
   display: flex;

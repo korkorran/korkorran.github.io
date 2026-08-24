@@ -51,19 +51,30 @@ module Target = struct
   let rss = root / "rss.xml"
 end
 
-(** {1 Helpers} *)
+(** {1 Articles as directories}
+
+    An article is a directory, not a file: [content/articles/<slug>/] holds
+    [index.md] next to the images it uses. That layout is what lets a post write
+    [!\[a diagram\](diagram.png)] and have the relative link resolve, because
+    the rendered page and its images end up as siblings in
+    [_site/posts/<slug>/]. *)
 
 let is_markdown = Path.has_extension "md"
 
-(** Where an article file is written: [content/articles/a.md] becomes
-    [_site/posts/a.html]. *)
-let article_target file =
-  Path.(move ~into:Target.posts (change_extension "html" file))
+(** Everything in an article directory that is not the Markdown source travels
+    with it: images, and whatever else the post needs. *)
+let is_asset path = not (is_markdown path)
 
-(** The URL of an article, absolute so that it works from any page and can be
-    concatenated with {!Config.url} in the feeds. *)
-let article_url file =
-  Path.(move ~into:(abs [ "posts" ]) (change_extension "html" file))
+let article_source dir = Path.(dir / "index.md")
+let article_output_dir dir = Path.move ~into:Target.posts dir
+let article_target dir = Path.(article_output_dir dir / "index.html")
+
+(** The public URL of an article. The trailing slash matters twice over: it is
+    what makes a relative image link resolve inside the post, and it lets the
+    server hand back [index.html] without a redirect. *)
+let article_url dir = Path.(move ~into:(abs [ "posts" ]) dir ++ [ "" ])
+
+(** {1 Helpers} *)
 
 (** Where a standalone page is written: [content/pages/about.md] becomes
     [_site/about.html]. *)
@@ -79,40 +90,69 @@ let author =
   Yocaml_syndication.Person.make ~uri:Config.author_uri
     ~email:Config.author_email Config.author_name
 
-(** The article list feeding the index and both syndication feeds. *)
+(** The article list feeding the index and both syndication feeds. Each article
+    directory is visited once and its [index.md] read for metadata only. *)
 let all_articles =
-  Archetype.Articles.fetch
-    (module Yocaml_yaml)
-    ~where:is_markdown ~compute_link:article_url Source.articles
+  let open Task in
+  Pipeline.fetch ~only:`Directories ~on:`Source
+    (fun dir ->
+      let open Eff in
+      let+ metadata, _content =
+        Yocaml_yaml.Eff.read_file_with_metadata
+          (module Archetype.Article)
+          ~on:`Source (article_source dir)
+      in
+      (article_url dir, metadata))
+    Source.articles
+  >>| fun articles -> Archetype.Articles.sort_by_date articles
 
 (** {1 Rules} *)
 
-(** Copy [static/css] and [static/images] verbatim into the target. *)
+(** Copy a directory into the target, recursively, one file at a time.
+
+    {!Yocaml.Action.copy_directory} would be a one-liner here, but it records
+    only the directory itself in the cache. {!Yocaml.Action.remove_residuals}
+    compares the cache against the files actually on disk, so it would then see
+    every file inside that directory as unaccounted for — and delete it. Copying
+    file by file registers each target, which also makes the copy properly
+    incremental. *)
+let rec copy_tree ~into dir cache =
+  let open Eff in
+  let target = Path.move ~into dir in
+  Action.batch ~only:`Files dir (Action.copy_file ~into:target) cache
+  >>= Action.batch ~only:`Directories dir (copy_tree ~into:target)
+
+(** Copy [static/css] and [static/images] verbatim into the target. These are
+    the site-wide assets; per-article images travel with their article. *)
 let static_files =
   let open Path.Infix in
   Action.batch_list
     [ Source.static / "css"; Source.static / "images" ]
-    (Action.copy_directory ~into:Target.root)
+    (copy_tree ~into:Target.root)
 
-(** One article: read its validated front matter, render the Markdown, then
-    wrap it in the article template and the layout. *)
-let article file =
-  Action.Static.write_file_with_metadata (article_target file)
+(** One article: render [index.md] through the article template and the layout,
+    then copy the directory's assets next to the result. *)
+let article dir cache =
+  let open Eff in
+  Action.Static.write_file_with_metadata (article_target dir)
     (let open Task in
      Pipeline.track_file Source.generator
      >>> Yocaml_yaml.Pipeline.read_file_with_metadata
            (module Archetype.Article)
-           file
+           (article_source dir)
      >>> Yocaml_markdown.Pipeline.With_metadata.make ()
      >>> Pipeline.chain_templates
            (module Yocaml_jingoo)
            (module Archetype.Article)
            [ article_template; layout ])
+    cache
+  >>= Action.batch ~only:`Files ~where:is_asset dir
+        (Action.copy_file ~into:(article_output_dir dir))
 
-let articles = Action.batch ~only:`Files ~where:is_markdown Source.articles article
+let articles = Action.batch ~only:`Directories Source.articles article
 
 (** One standalone page. Same shape as {!article}, with the simpler [Page]
-    archetype: no date, no synopsis. *)
+    archetype: no date, no synopsis, no companion assets. *)
 let page file =
   Action.Static.write_file_with_metadata (page_target file)
     (let open Task in
@@ -139,9 +179,8 @@ let index =
            Source.index
      >>> Yocaml_markdown.Pipeline.With_metadata.make ()
      >>> first
-           (Archetype.Articles.compute_index
-              (module Yocaml_yaml)
-              ~where:is_markdown ~compute_link:article_url Source.articles)
+           (fan_out id (lift (fun _ -> ()) >>> all_articles)
+           >>> Archetype.Articles.from_page)
      >>> Pipeline.chain_templates
            (module Yocaml_jingoo)
            (module Archetype.Articles)
@@ -179,6 +218,9 @@ let process_all () =
   >>= index
   >>= atom_feed
   >>= rss_feed
+  (* Anything left in _site/ that no rule above produced is stale — a renamed
+     article, a deleted page — so it goes. *)
+  >>= Action.remove_residuals ~target:Target.root
   >>= Action.store_cache Target.cache
 
 (** {1 Entry point} *)

@@ -7,10 +7,10 @@ a static site generator written as an OCaml *library* rather than a CLI tool.
 
 ```
 bin/main.ml          the generator itself: rules, metadata, feeds
-content/articles/    blog posts (Markdown + YAML front matter)
+content/articles/    one directory per post: index.md plus its images
 content/pages/       standalone pages (Markdown + YAML front matter)
 templates/           Jingoo templates
-static/              CSS and images, copied verbatim
+static/              site-wide CSS and images, copied verbatim
 _site/               build output (git-ignored)
 ```
 
@@ -37,9 +37,14 @@ unstyled page with broken links. Use `watch`, or any static server rooted at `_s
 The build is incremental: YOCaml tracks every target's dependencies — sources, templates,
 and the generator binary itself — and only rewrites what changed.
 
+Each build ends by deleting anything in `_site/` that no rule produced, so renaming or
+removing a post does not leave a stale page behind. Two consequences: do not keep
+hand-written files in `_site/` (a `CNAME`, for instance — add a rule for it instead), and
+note that only files are removed, so an emptied directory may linger harmlessly.
+
 ## Writing a post
 
-Create `content/articles/YYYY-MM-DD-slug.md`:
+A post is a **directory**, not a file. Create `content/articles/YYYY-MM-DD-slug/index.md`:
 
 ```markdown
 ---
@@ -69,6 +74,28 @@ description: Shown in the <meta name="description"> tag.
 Fenced code blocks are highlighted at build time by `yocaml_markdown`, which emits one
 CSS class per TextMate scope; the palette lives in
 [`static/css/style.css`](static/css/style.css).
+
+## Images in a post
+
+Put them in the post's own directory, next to `index.md`, and link them
+**relatively**:
+
+```
+content/articles/2026-08-08-hello-yocaml/
+  index.md
+  diagram.png
+```
+
+```markdown
+![A diagram of the pipeline](diagram.png)
+```
+
+The post is published at `/posts/<slug>/` and its images are copied alongside it
+into `_site/posts/<slug>/`, so a relative link resolves without further thought.
+Any file in the directory that is not Markdown travels with the post.
+
+For images used across the whole site (a logo, a shared illustration), use
+`static/images/` instead and link them absolutely: `/images/logo.svg`.
 
 ## Deployment
 
