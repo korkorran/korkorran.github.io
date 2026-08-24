@@ -2,6 +2,7 @@
 title: Hello, YOCaml
 synopsis: The first post on this blog, generated with YOCaml 3 — a static site generator written in OCaml.
 date: 2026-08-08
+banner: yocaml.png
 tags:
   - ocaml
   - yocaml

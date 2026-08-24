@@ -51,6 +51,7 @@ A post is a **directory**, not a file. Create `content/articles/YYYY-MM-DD-slug/
 title: A title
 synopsis: One sentence, used in the listing and in both feeds.
 date: 2026-08-08
+banner: yocaml.png
 tags:
   - ocaml
 ---
@@ -59,7 +60,15 @@ The body, in Markdown.
 ```
 
 `title` and `date` are required and validated at build time — a malformed date fails the
-build instead of producing a broken page. `synopsis` and `tags` are optional.
+build instead of producing a broken page. `synopsis`, `banner` and `tags` are optional.
+
+`banner` names an image **in the post's own directory**, displayed full width above the
+title. A wide image keeps its proportions; a tall or square one is cropped to 18rem
+rather than pushing the title off the screen. The field is not part of YOCaml's `Article`
+archetype — `bin/main.ml` wraps that archetype in its own metadata type to add it, which
+is the pattern to follow for any further field. A `banner` naming a file that is not
+there fails the build (exit 2) with a diagnostic pointing at the article, so a typo never
+reaches the published site.
 
 A standalone page goes in `content/pages/` and uses the simpler `Page` archetype, whose
 title field is `page_title` (there is no `date` and no `synopsis`):

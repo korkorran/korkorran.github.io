@@ -74,6 +74,41 @@ let article_target dir = Path.(article_output_dir dir / "index.html")
     server hand back [index.html] without a redirect. *)
 let article_url dir = Path.(move ~into:(abs [ "posts" ]) dir ++ [ "" ])
 
+(** [Archetype.Article] validates [title], [synopsis], [date] and the page
+    fields, but its set of fields is closed. Wrapping it adds [banner] — the
+    file name of an image sitting in the article's own directory, displayed
+    above the title — while reusing the archetype's validation for everything
+    else. *)
+module Article = struct
+  type t = { article : Archetype.Article.t; banner : string option }
+
+  let entity_name = Archetype.Article.entity_name
+
+  let neutral =
+    Result.map
+      (fun article -> { article; banner = None })
+      Archetype.Article.neutral
+
+  let validate data =
+    let open Data.Validation in
+    let ( let* ) = Result.bind in
+    let* article = Archetype.Article.validate data in
+    let* banner = record (fun fields -> optional fields "banner" string) data in
+    Ok { article; banner }
+
+  let banner { banner; _ } = banner
+
+  (** [banner] stays a bare file name so the template can use it as a relative
+      link: the image is copied next to the rendered page. *)
+  let normalize { article; banner } =
+    Archetype.Article.normalize article
+    @ Data.
+        [
+          ("banner", option string banner)
+        ; ("has_banner", bool (Option.is_some banner))
+        ]
+end
+
 (** {1 Helpers} *)
 
 (** Where a standalone page is written: [content/pages/about.md] becomes
@@ -105,6 +140,54 @@ let all_articles =
       (article_url dir, metadata))
     Source.articles
   >>| fun articles -> Archetype.Articles.sort_by_date articles
+
+(** [custom_error] is extensible precisely so a generator can add its own
+    validation failures. Going through it, rather than a bare exception, is what
+    makes YOCaml report this as an authoring mistake instead of suggesting the
+    user file a bug against YOCaml itself. *)
+type Data.Validation.custom_error +=
+  | Missing_banner of { article : Path.t; banner : Path.t }
+
+let error_handler ppf = function
+  | Missing_banner { article; banner } ->
+      Format.fprintf ppf
+        "%a declares a banner that does not exist: %a@,\
+         Drop the image in the article's directory, or fix the field."
+        Path.pp article Path.pp banner
+  | _ -> Format.fprintf ppf "Unknown error"
+
+(** Metadata validation is pure, so it cannot look at the filesystem. This is
+    the step that does: a [banner] naming a file that is not there stops the
+    build, instead of publishing a page with a broken image.
+
+    Note this runs as part of producing the article page, so it is skipped when
+    that page is already up to date — deleting a banner after a successful build
+    is only caught the next time the article itself changes. *)
+let check_banner dir =
+  Task.from_effect (fun ((metadata, _content) as document) ->
+      match Article.banner metadata with
+      | None -> Eff.return document
+      | Some name ->
+          let open Eff in
+          let source = article_source dir in
+          let banner = Path.(dir / name) in
+          let* exists = file_exists ~on:`Source banner in
+          if exists then return document
+          else
+            raise
+              (Eff.Provider_error
+                 {
+                   source = Some source
+                 ; target = None
+                 ; error =
+                     Required.Validation_error
+                       {
+                         entity = Article.entity_name
+                       ; error =
+                           Data.Validation.Custom
+                             (Missing_banner { article = source; banner })
+                       }
+                 }))
 
 (** {1 Rules} *)
 
@@ -138,12 +221,13 @@ let article dir cache =
     (let open Task in
      Pipeline.track_file Source.generator
      >>> Yocaml_yaml.Pipeline.read_file_with_metadata
-           (module Archetype.Article)
+           (module Article)
            (article_source dir)
+     >>> check_banner dir
      >>> Yocaml_markdown.Pipeline.With_metadata.make ()
      >>> Pipeline.chain_templates
            (module Yocaml_jingoo)
-           (module Archetype.Article)
+           (module Article)
            [ article_template; layout ])
     cache
   >>= Action.batch ~only:`Files ~where:is_asset dir
@@ -246,10 +330,12 @@ let usage () =
 let () =
   let command = if Array.length Sys.argv > 1 then Sys.argv.(1) else "build" in
   match command with
-  | "build" -> Yocaml_unix.run ~level:`Info process_all
-  | "watch" | "serve" ->
-      Yocaml_unix.serve ~level:`Info ~target:Target.root ~port:Config.port
+  | "build" ->
+      Yocaml_unix.run ~level:`Info ~custom_error_handler:error_handler
         process_all
+  | "watch" | "serve" ->
+      Yocaml_unix.serve ~level:`Info ~custom_error_handler:error_handler
+        ~target:Target.root ~port:Config.port process_all
   | "clean" ->
       List.iter
         (fun p -> remove (Path.to_string p))

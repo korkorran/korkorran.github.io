@@ -285,6 +285,25 @@ h3:hover .anchor {
   font-size: 0.95rem;
 }
 
+/* ---------- article banner ---------- */
+
+.post-banner {
+  display: block;
+  width: 100%;
+  /* A wide banner keeps its own proportions; a tall or square image is cropped
+     rather than allowed to push the title off the screen. */
+  max-height: 18rem;
+  object-fit: cover;
+  margin: 1rem 0 0;
+  border-radius: 6px;
+}
+
+/* The banner sits directly above the title, so the h1 does not need its usual
+   top margin on top of it. */
+.post-banner + h1 {
+  margin-top: 1.25rem;
+}
+
 /* ---------- post meta ---------- */
 
 .post-meta {
