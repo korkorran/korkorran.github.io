@@ -101,6 +101,7 @@ module Article = struct
     let* banner = record (fun fields -> optional fields "banner" string) data in
     Ok { article; banner }
 
+  let article { article; _ } = article
   let banner { banner; _ } = banner
 
   (** [banner] stays a bare file name so the template can use it as a relative
@@ -112,6 +113,39 @@ module Article = struct
           ("banner", option string banner)
         ; ("has_banner", bool (Option.is_some banner))
         ]
+end
+
+(** The index listing. [Archetype.Articles] is hard-wired to
+    [Archetype.Article], so its normalisation would drop [banner] on the floor;
+    this is the same shape, built on the extended article instead. *)
+module Articles = struct
+  type t = { page : Archetype.Page.t; articles : (Path.t * Article.t) list }
+
+  let from_page =
+    Task.lift (fun (page, articles) -> { page; articles })
+
+  let sort_by_date articles =
+    let date (_, a) = Archetype.Article.date (Article.article a) in
+    List.sort (fun a b -> Archetype.Datetime.compare (date b) (date a)) articles
+
+  (** [banner] is a bare file name, resolved against the article's own
+      directory. That works inside the article page, but the index sits at the
+      site root, so the listing needs the joined path instead. [url] already
+      ends with a slash. *)
+  let normalize_article (url, article) =
+    let url = Path.to_string url in
+    let banner_url =
+      Option.map (fun name -> url ^ name) (Article.banner article)
+    in
+    Data.record
+      (("url", Data.string url)
+      :: ("banner_url", Data.option Data.string banner_url)
+      :: Article.normalize article)
+
+  let normalize { page; articles } =
+    ("articles", Data.list_of normalize_article articles)
+    :: ("has_articles", Data.bool (articles <> []))
+    :: Archetype.Page.normalize page
 end
 
 (** {1 Helpers} *)
@@ -139,12 +173,18 @@ let all_articles =
       let open Eff in
       let+ metadata, _content =
         Yocaml_yaml.Eff.read_file_with_metadata
-          (module Archetype.Article)
+          (module Article)
           ~on:`Source (article_source dir)
       in
       (article_url dir, metadata))
     Source.articles
-  >>| fun articles -> Archetype.Articles.sort_by_date articles
+  >>| fun articles -> Articles.sort_by_date articles
+
+(** The feeds only need the plain archetype, so the banner is projected away. *)
+let all_articles_for_feeds =
+  let open Task in
+  all_articles
+  >>| List.map (fun (url, article) -> (url, Article.article article))
 
 (** [custom_error] is extensible precisely so a generator can add its own
     validation failures. Going through it, rather than a bare exception, is what
@@ -269,17 +309,17 @@ let index =
      >>> Yocaml_markdown.Pipeline.With_metadata.make ()
      >>> first
            (fan_out id (lift (fun _ -> ()) >>> all_articles)
-           >>> Archetype.Articles.from_page)
+           >>> Articles.from_page)
      >>> Pipeline.chain_templates
            (module Yocaml_jingoo)
-           (module Archetype.Articles)
+           (module Articles)
            [ index_template; layout ])
 
 let atom_feed =
   Action.Static.write_file Target.atom
     (let open Task in
      Pipeline.track_file Source.generator
-     >>> all_articles
+     >>> all_articles_for_feeds
      >>> Yocaml_syndication.Atom.from_articles ~site_url:Config.url
            ~feed_url:(Config.url ^ "/atom.xml")
            ~title:(Yocaml_syndication.Atom.text Config.title)
@@ -291,7 +331,7 @@ let rss_feed =
   Action.Static.write_file Target.rss
     (let open Task in
      Pipeline.track_file Source.generator
-     >>> all_articles
+     >>> all_articles_for_feeds
      >>> Yocaml_syndication.Rss.from_articles ~title:Config.title
            ~site_url:Config.url
            ~feed_url:(Config.url ^ "/rss.xml")

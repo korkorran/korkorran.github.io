@@ -285,6 +285,19 @@ h3:hover .anchor {
   font-size: 0.95rem;
 }
 
+/* ---------- listing banners ---------- */
+
+.post-list-banner {
+  display: block;
+  width: 100%;
+  /* Shorter than the banner on the article page: in a list it is a cue, not
+     the subject. */
+  max-height: 9rem;
+  object-fit: cover;
+  margin: 0 0 0.85rem;
+  border-radius: 5px;
+}
+
 /* ---------- article banner ---------- */
 
 .post-banner {

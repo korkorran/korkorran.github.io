@@ -5,7 +5,8 @@
 
 {% if has_articles %}  <ul class="post-list">
 {% for article in articles %}    <li>
-      <h2><a href="{{ article.url }}">{{ article.title }}</a></h2>
+{% if article.has_banner %}      <a href="{{ article.url }}" tabindex="-1" aria-hidden="true"><img class="post-list-banner" src="{{ article.banner_url }}" alt=""></a>
+{% endif %}      <h2><a href="{{ article.url }}">{{ article.title }}</a></h2>
       <p class="post-meta">
         <time datetime="{{ article.date.repr.date }}">{{ article.date.repr.date }}</time>
 {% if article.has_tags %}        <span class="tags">

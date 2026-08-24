@@ -2,6 +2,7 @@
 title: Pipelines and arrows
 synopsis: How YOCaml models building a page as a composition of arrows, and why that makes incremental builds fall out for free.
 date: 2026-08-09
+banner: arrows.png
 tags:
   - ocaml
   - yocaml
