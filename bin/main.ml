@@ -15,6 +15,11 @@ module Config = struct
   let author_name = "Frédéric Lang"
   let author_email = "frederic.ln.lang@gmail.com"
   let author_uri = "https://github.com/korkorran"
+  let license_url = "https://creativecommons.org/licenses/by-sa/4.0/"
+  let license_name = "CC BY-SA 4.0"
+
+  (* Feeds redistribute the posts, so they carry the same terms as the pages. *)
+  let rights = "Content licensed under " ^ license_name ^ " (" ^ license_url ^ ")"
   let port = 8000
 end
 
@@ -279,6 +284,7 @@ let atom_feed =
            ~feed_url:(Config.url ^ "/atom.xml")
            ~title:(Yocaml_syndication.Atom.text Config.title)
            ~subtitle:(Yocaml_syndication.Atom.text Config.synopsis)
+           ~rights:(Yocaml_syndication.Atom.text Config.rights)
            ~authors:(Nel.singleton author) ())
 
 let rss_feed =
@@ -289,7 +295,7 @@ let rss_feed =
      >>> Yocaml_syndication.Rss.from_articles ~title:Config.title
            ~site_url:Config.url
            ~feed_url:(Config.url ^ "/rss.xml")
-           ~description:Config.synopsis ())
+           ~description:Config.synopsis ~copyright:Config.rights ())
 
 (** {1 Program} *)
 

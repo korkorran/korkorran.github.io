@@ -111,3 +111,19 @@ For images used across the whole site (a logo, a shared illustration), use
 Pushing to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml),
 which builds the site and publishes `_site/` to GitHub Pages. Set
 *Settings → Pages → Source* to **GitHub Actions** once, and nothing else is needed.
+
+## Licence
+
+Two licences, covering different things:
+
+- **The content** — everything under `content/`, and the pages built from it — is
+  distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The
+  notice appears in every page footer, and in the `rights` (Atom) and `copyright` (RSS)
+  elements of the feeds.
+- **The generator** — `bin/main.ml`, the templates and the stylesheet — stays MIT, as
+  declared in `dune-project`.
+
+Each has its own file: [`LICENSE`](LICENSE) holds the MIT terms, and
+[`LICENSE-CONTENT`](LICENSE-CONTENT) the complete CC BY-SA 4.0 legal code as published by
+Creative Commons. Both cross-reference each other, so neither is read as covering the
+whole repository.
