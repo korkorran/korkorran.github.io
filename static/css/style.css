@@ -103,7 +103,8 @@ body {
 .site-nav {
   margin-left: auto;
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
   font-size: 0.9rem;
 }
 
