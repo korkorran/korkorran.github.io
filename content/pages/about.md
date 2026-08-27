@@ -14,9 +14,9 @@ It uses [YOCaml 3](https://github.com/xhtmlboi/yocaml) as a library: articles ar
 files with validated YAML front matter, templates are Jingoo, and the Atom and RSS feeds
 are generated from the same article list that feeds the index page.
 
-There is no database, no JavaScript, and no tracking. The build is incremental — YOCaml
+There is no database, no tracking. The build is incremental — YOCaml
 tracks each target's dependencies, including the generator binary itself, and rewrites
-only what changed.
+only what changed. Comments are powered by [Giscus](https://giscus.app).
 
 ## Elsewhere
 

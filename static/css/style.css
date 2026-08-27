@@ -370,6 +370,26 @@ td {
   border-bottom: 1px solid var(--rule);
 }
 
+/* ---------- comments ---------- */
+
+.comments {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.comments h2 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+}
+
+/* giscus injects an iframe of its own; keep it from overflowing the measure. */
+.giscus,
+.giscus-frame {
+  width: 100%;
+  max-width: 100%;
+}
+
 /* ---------- footer ---------- */
 
 .site-footer {

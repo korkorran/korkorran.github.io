@@ -1,5 +1,5 @@
 ---
-title: Introducing owebview
+title: Introducing Owebview
 synopsis: OCaml bindings for webview — a desktop window with an HTML UI, drawn by the web engine your operating system already ships.
 date: 2026-08-27
 tags:
