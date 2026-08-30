@@ -85,11 +85,20 @@ body {
   text-decoration: none;
 }
 
-/* The triskele is a single black path, so it has to be inverted in dark mode
-   or it disappears against the background. */
+/* Every image box below states BOTH dimensions, and leaves the artwork's own
+   proportions to object-fit. This is deliberate: SVG intrinsic sizing is not
+   reliable across engines. The article banner, for one, declares width="100%"
+   and no height, so it carries no intrinsic dimensions at all — only a viewBox
+   ratio. Firefox infers a size from that; WebKit does not, and the image blows
+   up. Relying on `width: auto` or `height: auto` for an SVG invites the same
+   class of bug, so nothing here does.
+
+   The triskele is a single black path, so it also has to be inverted in dark
+   mode or it disappears against the background. */
 .site-logo {
+  width: 1.71em; /* 641 / 600 of the height, the triskele's own ratio */
   height: 1.6em;
-  width: auto;
+  object-fit: contain;
   margin-right: 0.45em;
   vertical-align: -0.35em;
 }
@@ -292,8 +301,9 @@ h3:hover .anchor {
   display: block;
   width: 100%;
   /* Shorter than the banner on the article page: in a list it is a cue, not
-     the subject. */
-  max-height: 9rem;
+     the subject. An explicit height, not a max-height, so the box never depends
+     on the image reporting an intrinsic size. */
+  height: 9rem;
   object-fit: cover;
   margin: 0 0 0.85rem;
   border-radius: 5px;
@@ -304,9 +314,10 @@ h3:hover .anchor {
 .post-banner {
   display: block;
   width: 100%;
-  /* A wide banner keeps its own proportions; a tall or square image is cropped
-     rather than allowed to push the title off the screen. */
-  max-height: 18rem;
+  /* A fixed height rather than a max-height: the box is then the same in every
+     engine, and object-fit crops the artwork into it. A wide image loses a
+     little top and bottom; a square one is cropped hard. */
+  height: 18rem;
   object-fit: cover;
   margin: 1rem 0 0;
   border-radius: 6px;

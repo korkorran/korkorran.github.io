@@ -31,8 +31,21 @@ jobs:
           ocaml-compiler: "5.4"
           dune-cache: true
 
+      # opam invokes curl with `--retry 10`, but curl does not retry TLS
+      # handshake failures (exit 35) — only HTTP and timeout errors. A transient
+      # SSL error while fetching one source therefore fails the whole job on the
+      # first try, so retry the step itself.
       - name: Install dependencies
-        run: opam install . --deps-only --yes
+        run: |
+          for attempt in 1 2 3; do
+            if opam install . --deps-only --yes; then
+              exit 0
+            fi
+            echo "::warning::opam install failed (attempt $attempt/3), retrying in 20s"
+            sleep 20
+          done
+          echo "::error::opam install failed after 3 attempts"
+          exit 1
 
       - name: Build the site
         run: opam exec -- dune exec bin/main.exe -- build
