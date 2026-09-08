@@ -25,11 +25,14 @@ jobs:
       - name: Install oniguruma
         run: sudo apt-get update && sudo apt-get install -y libonig-dev
 
+      # `cache` covers the opam root and the switch. The old `dune-cache` input
+      # is deprecated and disappears in v4; Dune caching buys little here, the
+      # build being a single small executable.
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.4"
-          dune-cache: true
+          cache: true
 
       # opam invokes curl with `--retry 10`, but curl does not retry TLS
       # handshake failures (exit 35) — only HTTP and timeout errors. A transient
