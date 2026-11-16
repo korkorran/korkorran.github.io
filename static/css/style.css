@@ -421,3 +421,52 @@ td {
 .site-footer .spacer {
   margin-left: auto;
 }
+
+/* ---------- software page ---------- */
+
+h2:has(> .project-links) {
+  display: flex;
+  align-items: center;
+}
+
+h2 > .project-links {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.project-links .project-link,
+.project-links .project-license {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: normal;
+  text-decoration: none;
+  color: var(--muted);
+}
+
+.project-links .project-link::after,
+.project-links .project-license::after {
+  content: attr(data-label);
+}
+
+.project-links .project-link::before,
+.project-links .project-license::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  background-color: currentColor;
+  mask: var(--icon) center / contain no-repeat;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+}
+
+.icon-github { --icon: url("/images/github.svg"); }
+.icon-book { --icon: url("/images/book.svg"); }
+.icon-license { --icon: url("/images/license.svg"); }
+
+.project-links .project-link:hover {
+  color: var(--accent);
+}
