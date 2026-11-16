@@ -3,20 +3,17 @@ page_title: About
 description: Who writes here and what this site is built with.
 ---
 
-I am Frédéric Lang. I write software, mostly in OCaml, and this is where I keep notes
-worth more than a scratch file.
+Frédéric Lang - Korkorran -  works on bringing web technologies and OCaml together. He is the
+author of Owebview, OCaml bindings to the `webview` C library.
+
+He was most recently a research engineer at IRISA, where he worked on the
+development of [SmartFCA](https://www.smartfca.org), an ANR-funded platform for
+Formal Concept Analysis and the exploration of complex data. Before that he was
+a web developer in cybersecurity at Orange Cyberdéfense.
 
 ## This site
 
-Every page you see here is produced by a small OCaml program living in
-[`bin/main.ml`](https://github.com/korkorran/korkorran.github.io/blob/main/bin/main.ml).
-It uses [YOCaml 3](https://github.com/xhtmlboi/yocaml) as a library: articles are Markdown
-files with validated YAML front matter, templates are Jingoo, and the Atom and RSS feeds
-are generated from the same article list that feeds the index page.
-
-There is no database, no tracking. The build is incremental — YOCaml
-tracks each target's dependencies, including the generator binary itself, and rewrites
-only what changed. Comments are powered by [Giscus](https://giscus.app).
+This site is powered by [YOCaml](https://yocaml.github.io/tutorial/). Comments are powered by [Giscus](https://giscus.app).
 
 ## Elsewhere
 
